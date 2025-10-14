@@ -1,0 +1,46 @@
+# ============================================
+# Git Attributes Configuration
+# ============================================
+
+# TypeScript files
+*.ts text eol=lf
+*.tsx text eol=lf
+
+# JSON files
+*.json text eol=lf
+
+# Configuration files
+*.js text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Package files
+package.json text eol=lf
+package-lock.json text eol=lf
+
+# Environment files
+.env* text eol=lf
+
+# Documentation
+*.md text eol=lf
+README* text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+
+# Archives
+*.zip binary
+*.tar.gz binary
+*.rar binary
+
+# Logs
+*.log text eol=lf
+
+# SonarQube
+sonar-project.properties text eol=lf

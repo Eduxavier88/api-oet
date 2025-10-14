@@ -1,8 +1,16 @@
 # API OET - Integração com Sistema de Chamados
 
-API para integração com sistema de chamados OET via URA do Omnihit.
+API NestJS para integração com sistema de chamados OET via URA do Omnihit.
 
-## Estrutura do Projeto
+## 🚀 Tecnologias
+
+- **NestJS** - Framework Node.js
+- **TypeScript** - Linguagem principal
+- **Jest** - Testes unitários e integração
+- **SonarQube** - Análise de qualidade
+- **SOAP/WSDL** - Integração com OET
+
+## 📁 Estrutura do Projeto
 
 ```
 src/
@@ -12,43 +20,52 @@ src/
 │   └── app.config.ts          # Configurações centralizadas
 ├── modules/
 │   ├── oet/                   # Módulo de integração OET
-│   │   ├── controllers/
-│   │   │   └── oet.controller.ts
-│   │   ├── services/
-│   │   │   ├── oet.service.ts
-│   │   │   ├── file-processing.service.ts
-│   │   │   └── oet-soap.service.ts
-│   │   ├── dto/
-│   │   │   └── create-incident.dto.ts
+│   │   ├── controllers/       # Endpoints REST
+│   │   ├── services/          # Lógica de negócio
+│   │   ├── use-cases/         # Casos de uso (Clean Architecture)
+│   │   ├── dto/              # Validação de entrada
+│   │   ├── mock/             # Simulações para desenvolvimento
+│   │   ├── test/             # Testes unitários e integração
 │   │   └── oet.module.ts
 │   └── health/                # Módulo de health checks
-│       ├── controllers/
-│       │   └── health.controller.ts
-│       └── health.module.ts
 └── shared/
-    ├── types/
-    │   ├── oet.types.ts       # Tipos originais (legado)
-    │   └── oet-api.types.ts   # Tipos baseados no contrato
-    ├── constants/
-    │   └── oet-api.constants.ts
-    └── exceptions/
-        └── oet-api.exceptions.ts
+    ├── types/                # Tipos TypeScript
+    ├── constants/            # Constantes e configurações
+    └── exceptions/           # Exceções customizadas
 ```
 
-## Configuração
+## ⚙️ Configuração
 
-1. Copie o arquivo `env.example` para `.env`
-2. Configure as variáveis de ambiente necessárias
-3. Execute `npm install` para instalar dependências
+1. Clone o repositório
+2. Copie o arquivo `.env.example` para `.env`
+3. Configure as variáveis de ambiente necessárias
+4. Execute `npm install` para instalar dependências
 
-## Scripts Disponíveis
+## 🛠️ Scripts Disponíveis
 
-- `npm run start:dev` - Inicia em modo desenvolvimento
-- `npm run build` - Compila o projeto
-- `npm run test` - Executa testes
-- `npm run lint` - Executa linter
+```bash
+# Desenvolvimento
+npm run start:dev          # Inicia em modo desenvolvimento
+npm run start:debug        # Inicia em modo debug
 
-## Endpoints
+# Build e Produção
+npm run build              # Compila o projeto
+npm run start:prod         # Inicia versão de produção
+
+# Testes e Qualidade
+npm run test               # Executa testes
+npm run test:cov           # Executa testes com cobertura
+npm run test:watch         # Executa testes em modo watch
+npm run lint               # Executa linter
+npm run format             # Formata código
+
+# Análise de Qualidade
+npm run quality            # Executa testes + lint + build
+npm run quality:sonar      # Executa análise completa + SonarQube
+npm run sonar              # Executa análise SonarQube
+```
+
+## 🌐 Endpoints
 
 ### Health Check
 - `GET /health` - Verifica se a aplicação está funcionando
@@ -56,10 +73,26 @@ src/
 ### OET Integration
 - `POST /api/v1/integrations/oet/incidents` - Cria incidência no sistema OET
 
-## Próximos Passos
+## 📊 Qualidade de Código
 
-1. Implementar lógica nos serviços
-2. Adicionar testes unitários e de integração
-3. Configurar CI/CD
-4. Documentar API com Swagger
+- **Cobertura de Testes**: 67.58% statements, 56.43% branches
+- **SonarQube**: Integrado com análise contínua
+- **ESLint**: Configurado para TypeScript
+- **TypeScript**: Modo strict habilitado
+
+## 🧪 Testes
+
+- **Unitários**: Use Cases e Services
+- **Integração**: Controllers e endpoints
+- **Mock**: Sistema de simulação para desenvolvimento
+
+## 📈 Critérios de Aceitação
+
+- ✅ Fluxo de coleta de dados
+- ✅ Validação de campos obrigatórios
+- ✅ Processamento de arquivos
+- ✅ Integração SOAP com OET
+- ✅ Tratamento de erros
+- ✅ Logs estruturados
+- ✅ Testes completos
 
