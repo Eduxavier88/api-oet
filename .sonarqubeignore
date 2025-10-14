@@ -1,0 +1,24 @@
+# Arquivos e diretórios ignorados pelo SonarQube
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+
+# Arquivos de teste
+**/*.spec.ts
+**/*.test.ts
+**/test/**
+
+# Arquivos de configuração
+jest.config.js
+tsconfig.json
+package.json
+package-lock.json
+
+# Documentação
+README.md
+*.md

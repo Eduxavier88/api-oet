@@ -1,0 +1,141 @@
+---
+alwaysApply: true
+---
+# API OET - Regras de Desenvolvimento
+
+## 1) Visão Geral
+API OET é um serviço NestJS para integração com sistema de chamados OET via URA do Omnihit. 
+Objetivo: permitir que usuários da URA WhatsApp (Typebot) abram chamados/incidências junto à OET, 
+preenchendo dados e anexando evidências via API REST que faz bridge para SOAP/WSDL.
+
+## 2) Arquitetura & Tecnologias
+- **Backend**: NestJS + TypeScript (strict mode)
+- **Protocolo**: REST → SOAP (bridge para OET)
+- **Validação**: class-validator + class-transformer
+- **HTTP Client**: Axios com timeout e retry
+- **Testes**: Jest + Supertest
+- **Configuração**: @nestjs/config + variáveis de ambiente
+- **Linting**: ESLint + Prettier (sem emojis no código)
+
+## 3) Estrutura do Repositório
+```
+src/
+├── main.ts                     # Bootstrap da aplicação
+├── app.module.ts               # Módulo raiz
+├── config/
+│   └── app.config.ts          # Configurações centralizadas
+├── modules/
+│   ├── oet/                   # Módulo de integração OET
+│   │   ├── controllers/       # Endpoints REST
+│   │   ├── services/          # Lógica de negócio
+│   │   ├── dto/              # Validação de entrada
+│   │   └── interfaces/       # Contratos de API
+│   └── health/               # Health checks
+└── shared/
+    ├── types/                # Tipos TypeScript
+    ├── constants/            # Constantes e configurações
+    ├── exceptions/           # Exceções customizadas
+    └── utils/               # Utilitários compartilhados
+```
+
+## 4) Regras de Código Obrigatórias
+
+### TypeScript Strict Mode
+- **NUNCA** usar `any` - sempre tipos específicos
+- **SEMPRE** tipar parâmetros e retornos de função
+- **SEMPRE** usar `unknown` quando tipo é desconhecido
+- **SEMPRE** tratar `null`/`undefined` explicitamente
+
+### Performance & Escalabilidade
+- **SEMPRE** implementar timeout em chamadas HTTP (máx 15s)
+- **SEMPRE** limitar retry a máximo 2 tentativas
+- **SEMPRE** validar tamanho de arquivos antes do processamento
+- **SEMPRE** usar streaming para arquivos grandes (>1MB)
+- **SEMPRE** implementar cache quando apropriado
+- **SEMPRE** otimizar queries e evitar N+1
+- **SEMPRE** usar connection pooling para banco de dados
+- **SEMPRE** implementar rate limiting em endpoints públicos
+
+### Arquitetura & SRP
+- **SEMPRE** seguir Single Responsibility Principle
+- **SEMPRE** separar controllers, services e DTOs
+- **SEMPRE** usar injeção de dependências
+- **SEMPRE** implementar interfaces para contratos
+- **SEMPRE** manter controllers magros (apenas roteamento)
+
+### Validação & Segurança
+- **SEMPRE** validar entrada com class-validator
+- **SEMPRE** sanitizar dados antes do processamento
+- **SEMPRE** usar variáveis de ambiente para credenciais
+- **SEMPRE** implementar CORS restritivo
+- **SEMPRE** logar operações sensíveis (sem dados sensíveis)
+
+### Tratamento de Erros
+- **SEMPRE** usar exceções customizadas
+- **SEMPRE** implementar correlation_id para rastreamento
+- **SEMPRE** logar erros estruturados
+- **SEMPRE** retornar mensagens de erro padronizadas
+
+## 5) Padrões de Integração OET
+
+### Estrutura de Serviços
+```
+services/
+├── oet.service.ts              # Orquestração principal
+├── file-processing.service.ts  # Processamento de arquivos
+└── oet-soap.service.ts         # Comunicação SOAP
+```
+
+### Fluxo de Processamento
+1. **Validação**: DTO + validações de negócio
+2. **Processamento**: Download e conversão de arquivos
+3. **Transformação**: JSON → SOAP envelope
+4. **Comunicação**: Chamada SOAP com retry/timeout
+5. **Normalização**: SOAP response → JSON response
+
+### Configurações Obrigatórias
+- **Timeout**: 15 segundos para SOAP
+- **Retry**: máximo 2 tentativas (apenas 5xx)
+- **Arquivos**: máx 10 arquivos, 5MB cada, 25MB total
+- **Logs**: correlation_id, provider, operation, status, latency
+
+## 6) Testes Obrigatórios
+- **SEMPRE** testar casos de sucesso e erro
+- **SEMPRE** testar validações de entrada
+- **SEMPRE** testar timeouts e retries
+- **SEMPRE** testar processamento de arquivos
+- **SEMPRE** mockar chamadas externas
+- **SEMPRE** manter cobertura mínima de 80%
+
+## 7) Proibições Absolutas
+- **NUNCA** usar emojis no código
+- **NUNCA** commitar credenciais
+- **NUNCA** usar `any` ou `unknown` sem justificativa
+- **NUNCA** implementar lógica de negócio em controllers
+- **NUNCA** fazer chamadas HTTP sem timeout
+- **NUNCA** processar arquivos sem validação de tamanho
+- **NUNCA** retornar dados sensíveis em logs
+
+## 8) Scripts de Desenvolvimento
+```bash
+npm run start:dev    # Desenvolvimento com hot reload
+npm run build        # Compilação para produção
+npm run test         # Testes unitários
+npm run test:e2e     # Testes de integração
+npm run lint         # Verificação de código
+npm run format       # Formatação automática
+```
+
+## 9) Monitoramento & Observabilidade
+- **SEMPRE** implementar health checks
+- **SEMPRE** logar métricas de performance
+- **SEMPRE** monitorar taxa de erro
+- **SEMPRE** alertar para latência alta
+- **SEMPRE** rastrear uso de recursos
+
+## 10) Deployment & CI/CD
+- **SEMPRE** validar tipos antes do build
+- **SEMPRE** executar testes antes do deploy
+- **SEMPRE** usar variáveis de ambiente por ambiente
+- **SEMPRE** implementar rollback automático
+- **SEMPRE** monitorar saúde após deploy
