@@ -149,44 +149,6 @@ export class ImageDownloadService {
     return `image_${index}.${extension}`;
   }
 
-  private async downloadSingleImageOriginal(url: string, index: number): Promise<ProcessedImage> {
-    this.logger.log(`[IMAGE_DOWNLOAD] Baixando imagem ${index + 1} (URL original): ${url}`);
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get(url, {
-          responseType: 'arraybuffer',
-          timeout: 60000,
-          maxContentLength: this.maxFileSize,
-          maxRedirects: 5,
-        })
-      );
-
-      const contentType = response.headers['content-type'] || '';
-      const contentLength = Number.parseInt(response.headers['content-length'] || '0', 10);
-
-      this.validateImage(contentType, contentLength, url);
-
-      const base64 = Buffer.from(response.data).toString('base64');
-      const dataUrl = `data:${contentType};base64,${base64}`;
-
-      const filename = this.generateFilename(url, contentType, index);
-
-      this.logger.log(`[IMAGE_DOWNLOAD] Imagem ${index + 1} processada: ${filename} (${contentLength} bytes)`);
-
-      return {
-        filename,
-        contentType,
-        base64: dataUrl,
-        size: contentLength,
-        originalUrl: url,
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      this.logger.error(`[IMAGE_DOWNLOAD] Erro ao baixar ${url}: ${errorMessage}`);
-      throw new Error(`Falha ao baixar imagem: ${errorMessage}`);
-    }
-  }
 }
 
 
