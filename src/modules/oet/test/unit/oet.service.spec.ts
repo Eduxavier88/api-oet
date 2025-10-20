@@ -5,6 +5,8 @@ import { ValidateIncidentUseCase } from '../../use-cases/validate-incident.use-c
 import { TransformToSoapUseCase } from '../../use-cases/transform-to-soap.use-case';
 import { ProcessFilesUseCase } from '../../use-cases/process-files.use-case';
 import { CallOetSoapUseCase } from '../../use-cases/call-oet-soap.use-case';
+import { ChatwootService } from '../../services/chatwoot.service';
+import { ImageDownloadService } from '../../services/image-download.service';
 
 describe('OetService - Unit Tests', () => {
   let service: OetService;
@@ -12,6 +14,8 @@ describe('OetService - Unit Tests', () => {
   let transformToSoapUseCase: jest.Mocked<TransformToSoapUseCase>;
   let processFilesUseCase: jest.Mocked<ProcessFilesUseCase>;
   let callOetSoapUseCase: jest.Mocked<CallOetSoapUseCase>;
+  let chatwootService: jest.Mocked<ChatwootService>;
+  let imageDownloadService: jest.Mocked<ImageDownloadService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -42,6 +46,19 @@ describe('OetService - Unit Tests', () => {
           },
         },
         {
+          provide: ChatwootService,
+          useValue: {
+            getConversationMessages: jest.fn(),
+            extractImageUrls: jest.fn(),
+          },
+        },
+        {
+          provide: ImageDownloadService,
+          useValue: {
+            downloadImages: jest.fn(),
+          },
+        },
+        {
           provide: ConfigService,
           useValue: {
             get: jest.fn(),
@@ -55,6 +72,8 @@ describe('OetService - Unit Tests', () => {
     transformToSoapUseCase = module.get(TransformToSoapUseCase);
     processFilesUseCase = module.get(ProcessFilesUseCase);
     callOetSoapUseCase = module.get(CallOetSoapUseCase);
+    chatwootService = module.get(ChatwootService);
+    imageDownloadService = module.get(ImageDownloadService);
   });
 
   it('should be defined', () => {
@@ -72,7 +91,8 @@ describe('OetService - Unit Tests', () => {
         subject_name: 'Error del Sistema - Facturación',
         phone_user: '+57 300 1234567',
         cod_product: '5678',
-        files_urls: undefined
+        files_urls: undefined,
+        conversationId: '33809'
       };
 
       // Mock use cases
@@ -81,7 +101,37 @@ describe('OetService - Unit Tests', () => {
         errors: []
       });
 
-      processFilesUseCase.execute.mockResolvedValue([]);
+      // Mock Chatwoot service
+      chatwootService.getConversationMessages.mockResolvedValue({
+        payload: [
+          {
+            id: 1,
+            content: 'test',
+            message_type: 'incoming',
+            created_at: '2023-01-01',
+            attachments: [
+              {
+                id: 1,
+                file_type: 'image',
+                data_url: 'https://example.com/image.jpg',
+                file_size: 1024
+              }
+            ]
+          }
+        ]
+      });
+      chatwootService.extractImageUrls.mockReturnValue(['https://example.com/image.jpg']);
+
+      // Mock ImageDownloadService
+      imageDownloadService.downloadImages.mockResolvedValue([
+        {
+          filename: 'image.jpg',
+          contentType: 'image/jpeg',
+          base64: 'data:image/jpeg;base64,test',
+          size: 1024,
+          originalUrl: 'https://example.com/image.jpg'
+        }
+      ]);
 
       transformToSoapUseCase.execute.mockResolvedValue({
         nom_usuari: 'Juan Pérez',
@@ -111,7 +161,9 @@ describe('OetService - Unit Tests', () => {
       
       // Verify use cases were called
       expect(validateIncidentUseCase.execute).toHaveBeenCalledWith(incidentData);
-      expect(processFilesUseCase.execute).toHaveBeenCalledWith(incidentData.files_urls);
+      expect(chatwootService.getConversationMessages).toHaveBeenCalledWith('33809');
+      expect(chatwootService.extractImageUrls).toHaveBeenCalled();
+      expect(imageDownloadService.downloadImages).toHaveBeenCalledWith(['https://example.com/image.jpg']);
       expect(transformToSoapUseCase.execute).toHaveBeenCalledWith(incidentData);
       expect(callOetSoapUseCase.execute).toHaveBeenCalled();
     });

@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 
 import { OetController } from './controllers/oet.controller';
 import { OetService } from './services/oet.service';
+import { ChatwootService } from './services/chatwoot.service';
+import { ImageDownloadService } from './services/image-download.service';
 
 // Use Cases
 import { ValidateIncidentUseCase } from './use-cases/validate-incident.use-case';
@@ -24,7 +26,7 @@ import { CallOetSoapUseCase } from './use-cases/call-oet-soap.use-case';
 @Module({
   imports: [
     HttpModule.register({
-      timeout: 15000,
+      timeout: parseInt(process.env['HTTP_TIMEOUT'] || '15000', 10),
       maxRedirects: 2,
     }),
     ConfigModule,
@@ -32,6 +34,8 @@ import { CallOetSoapUseCase } from './use-cases/call-oet-soap.use-case';
   controllers: [OetController],
   providers: [
     OetService,
+    ChatwootService,
+    ImageDownloadService,
     // Use Cases
     ValidateIncidentUseCase,
     TransformToSoapUseCase,

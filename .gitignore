@@ -199,3 +199,14 @@ Thumbs.db
 .sonarqube/
 scannerwork/
 
+# Credenciais e configurações sensíveis
+*.credentials
+*.secrets
+.env.production
+.env.development
+config/production/
+config/secrets/
+
+
+# Cursor
+.cursor/

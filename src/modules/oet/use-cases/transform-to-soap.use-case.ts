@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { getOetCredentials } from '../../../config/oet-credentials.config';
 
 /**
  * @purpose Transforma dados JSON da API em formato SOAP para OET
  * @why Converter dados do Typebot para formato esperado pela OET
- * @collaborators ConfigService para credenciais
+ * @collaborators getOetCredentials para credenciais
  * @inputs Dados validados da incidência
  * @outputs Objeto no formato SOAP OET
  * @sideEffects Nenhum
@@ -30,7 +31,7 @@ export class TransformToSoapUseCase {
   /**
    * @purpose Transforma dados validados em formato SOAP para OET
    * @why Mapear campos da API para campos esperados pela OET
-   * @collaborators ConfigService para credenciais
+   * @collaborators getOetCredentials para credenciais
    * @inputs Dados validados da incidência
    * @outputs Objeto no formato SOAP OET
    * @sideEffects Nenhum
@@ -45,9 +46,23 @@ export class TransformToSoapUseCase {
       asu_messag: data.subject_name,
       tel_usuari: data.phone_user,
       nit_transp: data.nit_transp,
-      id_project: data.cod_product,
-      nom_usulog: this.configService.get<string>('OET_USER') || 'test_user',
-      pwd_usulog: this.configService.get<string>('OET_PASSWORD') || 'test_pass',
+      id_project: data.id_project || this.configService.get<string>('OET_DEFAULT_PROJECT_ID') || '52', // ID do projeto fixo para OET
+      nom_usulog: this.getOetCredentials().username,
+      pwd_usulog: this.getOetCredentials().password,
     };
+  }
+
+  /**
+   * @purpose Obtém as credenciais OET baseadas no ambiente
+   * @why Usar credenciais diferentes para dev e produção
+   * @collaborators ConfigService
+   * @inputs Nenhum
+   * @outputs Credenciais OET (username e password)
+   * @sideEffects Nenhum
+   * @errors Nenhum
+   * @examples getOetCredentials() -> { username: 'usr_prod', password: 'xxx' }
+   */
+  private getOetCredentials(): { username: string; password: string } {
+    return getOetCredentials();
   }
 }

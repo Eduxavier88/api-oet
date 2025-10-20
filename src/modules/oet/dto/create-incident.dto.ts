@@ -1,5 +1,4 @@
 import { IsString, IsEmail, IsOptional, IsNotEmpty, MinLength, MaxLength, Matches } from 'class-validator';
-import { Transform } from 'class-transformer';
 
 export class CreateIncidentDto {
   @IsString()
@@ -41,19 +40,24 @@ export class CreateIncidentDto {
 
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => {
-    // Remove espaços em branco e divide por vírgula
-    if (typeof value === 'string') {
-      return value.trim().split(',').map(url => url.trim()).filter(url => url.length > 0);
-    }
-    return value;
-  })
-  files_urls?: string;
+  files_urls?: string; // Campo mantido para compatibilidade (não utilizado)
 
   @IsOptional()
   @IsString()
   @MaxLength(50, { message: 'Código do produto deve ter no máximo 50 caracteres' })
   @Matches(/^\d+$/, { message: 'Código do produto deve conter apenas números' })
   cod_product?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50, { message: 'ID do projeto deve ter no máximo 50 caracteres' })
+  @Matches(/^\d+$/, { message: 'ID do projeto deve conter apenas números' })
+  id_project?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20, { message: 'ID da conversa deve ter no máximo 20 caracteres' })
+  @Matches(/^\d+$/, { message: 'ID da conversa deve conter apenas números' })
+  conversationId?: string;
 }
 

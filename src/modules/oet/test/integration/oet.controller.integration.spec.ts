@@ -10,6 +10,8 @@ import { ValidateIncidentUseCase } from '../../use-cases/validate-incident.use-c
 import { TransformToSoapUseCase } from '../../use-cases/transform-to-soap.use-case';
 import { ProcessFilesUseCase } from '../../use-cases/process-files.use-case';
 import { CallOetSoapUseCase } from '../../use-cases/call-oet-soap.use-case';
+import { ChatwootService } from '../../services/chatwoot.service';
+import { ImageDownloadService } from '../../services/image-download.service';
 
 describe('OetController Integration Tests', () => {
   let app: INestApplication;
@@ -34,6 +36,8 @@ describe('OetController Integration Tests', () => {
         TransformToSoapUseCase,
         ProcessFilesUseCase,
         CallOetSoapUseCase,
+        ChatwootService,
+        ImageDownloadService,
       ],
     }).compile();
 

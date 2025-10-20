@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { OetResponseMock } from '../mock/oet-response.mock';
+
 
 export interface OetIncidentResponse {
   status: 'ok' | 'error';
@@ -23,25 +23,18 @@ export class CallOetSoapUseCase {
   ) {}
 
   async execute(soapRequest: any, processedFiles: any[]): Promise<OetIncidentResponse> {
-    // Verificar se está em modo de desenvolvimento (múltiplas validações)
-    const isDevMode = this.isDevelopmentMode();
-    
-    if (isDevMode) {
-      this.logger.warn('[DEV MODE] Usando mock da OET - NÃO USAR EM PRODUÇÃO!');
-      
-      // Simular delay de rede
-      await OetResponseMock.simulateNetworkDelay();
-      
-      // Retornar resposta simulada
-      return OetResponseMock.simulateResponse(soapRequest, processedFiles);
-    }
-
     try {
       // Construir envelope SOAP
       const soapEnvelope = this.buildSoapEnvelope(soapRequest, processedFiles);
       
+      // Log resumido para debug (sem base64)
+      this.logger.log(`[DEBUG] SOAP Envelope enviado (${processedFiles.length} arquivos)`);
+      
       // URL do WSDL OET
-      const wsdlUrl = this.configService.get<string>('OET_WSDL_URL') || 'https://oet-dev.intrared.net:8083/ap/interf/app/spg_new/spg.php?wsdl';
+      const wsdlUrl = this.configService.get<string>('OET_WSDL_URL');
+      if (!wsdlUrl) {
+        throw new Error('OET_WSDL_URL não configurada');
+      }
       
       // Fazer chamada SOAP
       const response = await this.httpService.axiosRef.post(
@@ -50,11 +43,15 @@ export class CallOetSoapUseCase {
         {
           headers: {
             'Content-Type': 'text/xml; charset=utf-8',
-            'SOAPAction': 'setSoport'
+            'SOAPAction': 'urn:consult_base#setSoport'
           },
-          timeout: 15000
+          timeout: this.configService.get<number>('HTTP_TIMEOUT') || 15000
         }
       );
+
+      // Log da resposta da OET
+      this.logger.log(`[DEBUG] OET Response Status: ${response.status}`);
+      this.logger.log(`[DEBUG] OET Response Data: ${response.data}`);
 
       // Processar resposta SOAP
       return this.parseSoapResponse(response.data);
@@ -70,98 +67,75 @@ export class CallOetSoapUseCase {
         };
       }
       
-      // Re-lançar outros erros
+      
       throw error;
     }
   }
 
   private buildSoapEnvelope(soapRequest: any, processedFiles: any[]): string {
-    // Construir XML SOAP envelope
+    
     let soapBody = `
-      <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-        <soap:Body>
-          <setSoport>
+      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:consult_base">
+        <soapenv:Header/>
+        <soapenv:Body>
+          <urn:setSoport>
             <nom_usulog>${soapRequest.nom_usulog}</nom_usulog>
             <pwd_usulog>${soapRequest.pwd_usulog}</pwd_usulog>
             <nom_usuari>${soapRequest.nom_usuari}</nom_usuari>
             <ema_usuari>${soapRequest.ema_usuari}</ema_usuari>
             <tex_messag>${soapRequest.tex_messag}</tex_messag>
             <asu_messag>${soapRequest.asu_messag}</asu_messag>
-            <tel_usuari>${soapRequest.tel_usuari}</tel_usuari>
-            <nit_transp>${soapRequest.nit_transp}</nit_transp>
-            <id_project>${soapRequest.id_project || ''}</id_project>
-    `;
+            <dat_filexx>`;
 
-    // Adicionar arquivos se existirem
-    if (processedFiles.length > 0) {
-      soapBody += '<dat_filexx>';
-      processedFiles.forEach(file => {
+    // Adicionar arquivos processados se existirem
+    if (processedFiles && processedFiles.length > 0) {
+      this.logger.log(`[SOAP] Incluindo ${processedFiles.length} arquivos no SOAP`);
+      processedFiles.forEach((file, index) => {
+        // Evitar logar nomes reais de arquivo
+        this.logger.log(`[SOAP] Arquivo ${index + 1}: (${file.size} bytes, ${file.contentType})`);
         soapBody += `
-          <item>
-            <file>${file.file}</file>
-            <fil_sizexx>${file.fil_sizexx}</fil_sizexx>
-            <nom_filexx>${file.nom_filexx}</nom_filexx>
-            <tip_attach>${file.tip_attach}</tip_attach>
-          </item>
-        `;
+              <item>
+                <file>${file.base64}</file>
+                <fil_sizexx>${file.size}</fil_sizexx>
+                <nom_filexx>file-${index + 1}</nom_filexx>
+                <tip_attach>${file.contentType}</tip_attach>
+              </item>`;
       });
-      soapBody += '</dat_filexx>';
+    } else {
+      
+      soapBody += `
+              <item>
+                <file/>
+                <fil_sizexx/>
+                <nom_filexx/>
+                <tip_attach/>
+              </item>`;
     }
 
     soapBody += `
-          </setSoport>
-        </soap:Body>
-      </soap:Envelope>
+            </dat_filexx>
+            <tel_usuari>${soapRequest.tel_usuari}</tel_usuari>
+            <nit_transp>${soapRequest.nit_transp}</nit_transp>
+            <id_project>${soapRequest.id_project}</id_project>
+          </urn:setSoport>
+        </soapenv:Body>
+      </soapenv:Envelope>
     `;
 
     return soapBody;
   }
 
-  /**
-   * @purpose Verifica se está em modo de desenvolvimento com múltiplas validações
-   * @why Garantir que mock nunca execute em produção
-   * @collaborators ConfigService, process.env
-   * @inputs Nenhum
-   * @outputs Boolean indicando se é modo dev
-   * @sideEffects Nenhum
-   * @errors Nenhum
-   * @examples const isDev = useCase.isDevelopmentMode()
-   */
-  private isDevelopmentMode(): boolean {
-    // Validação 1: Variável de ambiente explícita
-    const testMode = this.configService.get<string>('OET_TEST_MODE');
-    const isTestMode = testMode === 'true';
-    
-    // Validação 2: NODE_ENV não deve ser 'production'
-    const nodeEnv = process.env['NODE_ENV'];
-    const isNotProduction = nodeEnv !== 'production';
-    
-    // Validação 3: Verificar se credenciais são de teste
-    const user = this.configService.get<string>('OET_USER');
-    const password = this.configService.get<string>('OET_PASSWORD');
-    const isTestCredentials = user === 'test_user' || password === 'test_pass';
-    
-    // Só ativa mock se TODAS as condições forem verdadeiras
-    const shouldUseMock = isTestMode && isNotProduction && isTestCredentials;
-    
-    // Log de segurança em produção
-    if (nodeEnv === 'production' && isTestMode) {
-      this.logger.error('[SEGURANÇA] OET_TEST_MODE=true detectado em PRODUÇÃO! Desabilitando mock.');
-      return false;
-    }
-    
-    return shouldUseMock;
-  }
+  
 
   private parseSoapResponse(soapResponse: string): OetIncidentResponse {
-    // Extrair código de resposta
-    const codeMatch = soapResponse.match(/<code_resp>(\d+)<\/code_resp>/);
-    const msgMatch = soapResponse.match(/<msg_resp>(.*?)<\/msg_resp>/);
+    // Extrair código de resposta - OET usa namespaces diferentes
+    const codeMatch = soapResponse.match(/<code_resp[^>]*>(\d+)<\/code_resp>/);
+    const msgMatch = soapResponse.match(/<msg_resp[^>]*>(.*?)<\/msg_resp>/);
     
     const code = codeMatch?.[1];
     const message = msgMatch?.[1];
 
-    // Código 1000 = sucesso
+    // Não logar mensagem completa para evitar PII
     if (code === '1000') {
       // Extrair task_id da mensagem
       const taskIdMatch = message?.match(/La Tarea (\d+)/);
@@ -175,6 +149,15 @@ export class CallOetSoapUseCase {
     }
 
     // Códigos de erro
+    if (code === '1001') {
+      return {
+        status: 'error',
+        code: 'OET_PARENT_TASK_ERROR',
+        oet_code: code,
+        message: message
+      };
+    }
+
     if (code === '1002') {
       return {
         status: 'error',
@@ -193,7 +176,7 @@ export class CallOetSoapUseCase {
       };
     }
 
-    // Erro genérico
+    
     return {
       status: 'error',
       code: 'OET_ERROR',

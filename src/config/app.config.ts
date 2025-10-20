@@ -26,6 +26,11 @@ export interface AppConfig {
     maxTotalFileSize: number;
     maxFilesCount: number;
   };
+  chatwoot: {
+    baseUrl: string;
+    token: string;
+    accountId: string;
+  };
 }
 
 /**
@@ -49,6 +54,12 @@ export const appConfig: AppConfig = {
     maxFileSize: parseInt(process.env['MAX_FILE_SIZE'] || '5242880', 10), // 5MB
     maxTotalFileSize: parseInt(process.env['MAX_TOTAL_FILE_SIZE'] || '26214400', 10), // 25MB
     maxFilesCount: parseInt(process.env['MAX_FILES_COUNT'] || '10', 10),
+  },
+  
+  chatwoot: {
+    baseUrl: process.env['CHATWOOT_BASE_URL'] || 'https://omnihitv2.omnihit.app.br',
+    token: process.env['CHATWOOT_TOKEN'] || '',
+    accountId: process.env['CHATWOOT_ACCOUNT_ID'] || '1',
   },
 };
 

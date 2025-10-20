@@ -1,14 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
-
 import { OetModule } from './modules/oet/oet.module';
 import { HealthModule } from './modules/health/health.module';
-
 /**
  * @purpose Módulo raiz da aplicação que configura e organiza todos os módulos
  * @why Necessário para bootstrap da aplicação NestJS
- * @collaborators OetModule, HealthModule, ConfigModule
+ * @collaborators HealthModule, ConfigModule
  * @inputs Nenhum
  * @outputs Módulo configurado da aplicação
  * @sideEffects Nenhum
@@ -19,14 +17,15 @@ import { HealthModule } from './modules/health/health.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: ['.env'],
     }),
     HttpModule.register({
-      timeout: 15000,
+      timeout: parseInt(process.env['HTTP_TIMEOUT'] || '15000', 10),
       maxRedirects: 2,
     }),
     OetModule,
     HealthModule,
   ],
+ 
 })
 export class AppModule {}

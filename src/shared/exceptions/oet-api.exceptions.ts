@@ -1,20 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { ApiErrorCode, ValidationError } from '../types/oet-api.types';
 
-/**
- * @purpose Exceções customizadas para a API OET
- * @why Padronizar tratamento de erros e facilitar debugging
- * @collaborators OetController, OetService, ExceptionFilter
- * @inputs Código de erro, mensagem e detalhes opcionais
- * @outputs Exceções HTTP padronizadas
- * @sideEffects Lança exceções HTTP
- * @errors Nenhum
- * @examples throw new OetValidationException('Email inválido', [{ field: 'email', message: 'Formato inválido' }])
- */
 
-/**
- * Exceção para erros de validação de entrada
- */
 export class OetValidationException extends HttpException {
   constructor(message: string, errors: ValidationError[]) {
     super(
@@ -29,9 +16,7 @@ export class OetValidationException extends HttpException {
   }
 }
 
-/**
- * Exceção para erros de autenticação com OET
- */
+
 export class OetAuthException extends HttpException {
   constructor(message: string, oetCode?: string) {
     super(
@@ -46,9 +31,7 @@ export class OetAuthException extends HttpException {
   }
 }
 
-/**
- * Exceção para arquivos muito grandes
- */
+
 export class FileSizeExceededException extends HttpException {
   constructor(message: string, details?: any) {
     super(
@@ -63,9 +46,7 @@ export class FileSizeExceededException extends HttpException {
   }
 }
 
-/**
- * Exceção para erros de validação da OET
- */
+
 export class OetValidationErrorException extends HttpException {
   constructor(message: string, oetCode: string) {
     super(
@@ -80,9 +61,7 @@ export class OetValidationErrorException extends HttpException {
   }
 }
 
-/**
- * Exceção para erros de comunicação com OET
- */
+
 export class OetServiceException extends HttpException {
   constructor(message: string, retryAvailable = false) {
     super(
@@ -97,9 +76,7 @@ export class OetServiceException extends HttpException {
   }
 }
 
-/**
- * Exceção para erros internos
- */
+
 export class OetInternalException extends HttpException {
   constructor(message: string, correlationId?: string) {
     super(

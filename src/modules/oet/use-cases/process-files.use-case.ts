@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
 
 export interface ProcessedFile {
   file: string; 
@@ -10,44 +9,55 @@ export interface ProcessedFile {
 
 @Injectable()
 export class ProcessFilesUseCase {
-  constructor(private readonly httpService: HttpService) {}
+  constructor() {}
 
-  async execute(filesUrls?: string): Promise<ProcessedFile[]> {
-    if (!filesUrls) {
+  async execute(filesBinary?: string): Promise<ProcessedFile[]> {
+    // Se não há arquivos, retornar array vazio
+    if (!filesBinary || filesBinary.trim() === '') {
       return [];
     }
 
-    
-    const urls = filesUrls.split(',').map(url => url.trim());
-    const results: ProcessedFile[] = [];
+    // Processar arquivo base64
+    return this.processBase64File(filesBinary);
+  }
 
-    for (const url of urls) {
-      try {
-        // Download do arquivo
-        const response = await this.httpService.axiosRef.get(url, {
-          responseType: 'arraybuffer',
-          timeout: 15000
-        });
-
-        // Converter para base64
-        const buffer = Buffer.from(response.data);
-        const base64Content = buffer.toString('base64');
-
-        
-        const fileName = url.split('/').pop() || 'file';
-        
-        // Criar objeto processado
-        results.push({
-          file: base64Content,
-          fil_sizexx: buffer.length,
-          nom_filexx: fileName,
-          tip_attach: response.headers['content-type'] || 'application/octet-stream'
-        });
-      } catch (error) {
-        throw error;
+  /**
+   * @purpose Processa arquivo binário em base64 (formato data:image/jpeg;base64,...)
+   * @why Converter arquivos binários do Typebot para formato OET
+   * @collaborators Nenhum
+   * @inputs String binário base64 com prefixo data: ou string vazia/null
+   * @outputs Array com arquivo processado ou array vazio se não há arquivos
+   * @sideEffects Nenhum
+   * @errors Nenhum
+   * @examples execute('data:image/jpeg;base64,/9j/4AAQ...') ou execute('')
+   */
+  private processBase64File(base64String: string): ProcessedFile[] {
+    try {
+      // Extrair tipo MIME e dados base64
+      const [header, base64Data] = base64String.split(',');
+      
+      if (!header || !base64Data) {
+        throw new Error('Formato base64 inválido');
       }
+      
+      const mimeMatch = header.match(/data:([^;]+)/);
+      const mimeType = mimeMatch?.[1] || 'application/octet-stream';
+      
+      // Converter base64 para buffer para calcular tamanho
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      // Gerar nome do arquivo baseado no tipo
+      const extension = mimeType.split('/')[1] || 'bin';
+      const fileName = `file_${Date.now()}.${extension}`;
+      
+      return [{
+        file: base64Data,
+        fil_sizexx: buffer.length,
+        nom_filexx: fileName,
+        tip_attach: mimeType
+      }];
+    } catch (error) {
+      throw new Error(`Erro ao processar arquivo base64: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
-
-    return results;
   }
 }

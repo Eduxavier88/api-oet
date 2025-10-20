@@ -15,7 +15,15 @@ describe('CallOetSoapUseCase - Unit Tests', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn().mockReturnValue('https://oet-dev.intrared.net:8083/ap/interf/app/spg_new/spg.php?wsdl')
+            get: (key: string) => {
+              if (key === 'OET_WSDL_URL') {
+                return 'https://oet-dev.intrared.net:8083/ap/interf/app/spg_new/spg.php?wsdl';
+              }
+              if (key === 'HTTP_TIMEOUT') {
+                return 15000;
+              }
+              return undefined as any;
+            }
           }
         }
       ],
@@ -83,17 +91,17 @@ describe('CallOetSoapUseCase - Unit Tests', () => {
       });
 
       // Verify SOAP call was made
-      expect(mockPost).toHaveBeenCalledWith(
-        expect.stringContaining('wsdl'),
-        expect.stringContaining('setSoport'),
-        expect.objectContaining({
-          headers: {
-            'Content-Type': 'text/xml; charset=utf-8',
-            'SOAPAction': 'setSoport'
-          },
-          timeout: 15000
-        })
-      );
+      expect(mockPost).toHaveBeenCalled();
+      const [url, body, config] = (mockPost as jest.Mock).mock.calls[0];
+      expect(url).toEqual(expect.stringContaining('wsdl'));
+      expect(body).toEqual(expect.stringContaining('setSoport'));
+      expect(config).toEqual(expect.objectContaining({
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'SOAPAction': 'urn:consult_base#setSoport'
+        },
+        timeout: expect.any(Number)
+      }));
     });
 
     it('should handle OET authentication error', async () => {
@@ -219,6 +227,41 @@ describe('CallOetSoapUseCase - Unit Tests', () => {
         code: 'OET_SERVICE_ERROR',
         message: 'Erro ao comunicar com serviço OET: timeout após 15 segundos',
         retry_available: true
+      });
+    });
+
+    it('should handle unexpected SOAP response (generic error)', async () => {
+      // Arrange
+      const soapRequest = {
+        nom_usuari: 'Juan Pérez',
+        ema_usuari: 'juan@example.com',
+        tex_messag: 'Error en el sistema',
+        asu_messag: 'Error del Sistema',
+        tel_usuari: '+57 300 1234567',
+        nit_transp: '900123456',
+        id_project: '5678',
+        nom_usulog: 'test_user',
+        pwd_usulog: 'test_pass'
+      };
+
+      const processedFiles: any[] = [];
+
+      const mockSoapWeirdResponse = {
+        data: `<?xml version="1.0" encoding="UTF-8"?>\n<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">\n  <soap:Body>\n    <setSoportResponse>\n      <code_resp>9999</code_resp>\n      <msg_resp>Erro desconhecido</msg_resp>\n    </setSoportResponse>\n  </soap:Body>\n</soap:Envelope>`
+      };
+
+      const mockPost = jest.fn().mockResolvedValue(mockSoapWeirdResponse);
+      httpService.axiosRef.post = mockPost;
+
+      // Act
+      const result = await useCase.execute(soapRequest, processedFiles);
+
+      // Assert
+      expect(result).toEqual({
+        status: 'error',
+        code: 'OET_ERROR',
+        oet_code: '9999',
+        message: 'Erro desconhecido'
       });
     });
   });
