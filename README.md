@@ -1,6 +1,6 @@
 # API OET - Integração com Sistema de Chamados
 
-API NestJS para integração com sistema de chamados OET via URA do Omnihit.
+API NestJS para integração com sistema de chamados OET via URA.
 
 ## 🚀 Tecnologias
 

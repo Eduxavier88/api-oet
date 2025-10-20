@@ -1,7 +1,7 @@
 {
   "name": "api-oet",
   "version": "1.0.0",
-  "description": "API para integração com sistema de chamados OET via URA do Omnihit",
+  "description": "API para integração com sistema de chamados OET via URA",
   "main": "dist/main.js",
   "scripts": {
     "build": "nest build",
@@ -24,7 +24,6 @@
   "keywords": [
     "nestjs",
     "oet",
-    "omnihit",
     "ura",
     "chamados",
     "soap"

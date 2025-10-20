@@ -67,7 +67,12 @@ export class ImageDownloadService {
   private async downloadSingleImage(url: string, index: number): Promise<ProcessedImage> {
     // Substituir URL do Chatwoot para usar IP correto do servidor
     const chatwootBaseUrl = this.configService.get<string>('CHATWOOT_BASE_URL') || 'http://172.31.187.223:3000';
-    const correctedUrl = url.replace('https://omnihitv2.omnihit.app.br', chatwootBaseUrl);
+    const originalBaseUrl = this.configService.get<string>('CHATWOOT_ORIGINAL_BASE_URL');
+    if (!originalBaseUrl) {
+      this.logger.warn('[IMAGE_DOWNLOAD] CHATWOOT_ORIGINAL_BASE_URL não configurado, usando URL original');
+      return this.downloadSingleImageOriginal(url, index);
+    }
+    const correctedUrl = url.replace(originalBaseUrl, chatwootBaseUrl);
     this.logger.log(`[IMAGE_DOWNLOAD] Baixando imagem ${index + 1}: ${correctedUrl}`);
 
     try {
@@ -144,6 +149,45 @@ export class ImageDownloadService {
    
     const extension = contentType.split('/')[1] || 'jpg';
     return `image_${index}.${extension}`;
+  }
+
+  private async downloadSingleImageOriginal(url: string, index: number): Promise<ProcessedImage> {
+    this.logger.log(`[IMAGE_DOWNLOAD] Baixando imagem ${index + 1} (URL original): ${url}`);
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(url, {
+          responseType: 'arraybuffer',
+          timeout: 60000,
+          maxContentLength: this.maxFileSize,
+          maxRedirects: 5,
+        })
+      );
+
+      const contentType = response.headers['content-type'] || '';
+      const contentLength = Number.parseInt(response.headers['content-length'] || '0', 10);
+
+      this.validateImage(contentType, contentLength, url);
+
+      const base64 = Buffer.from(response.data).toString('base64');
+      const dataUrl = `data:${contentType};base64,${base64}`;
+
+      const filename = this.generateFilename(url, contentType, index);
+
+      this.logger.log(`[IMAGE_DOWNLOAD] Imagem ${index + 1} processada: ${filename} (${contentLength} bytes)`);
+
+      return {
+        filename,
+        contentType,
+        base64: dataUrl,
+        size: contentLength,
+        originalUrl: url,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      this.logger.error(`[IMAGE_DOWNLOAD] Erro ao baixar ${url}: ${errorMessage}`);
+      throw new Error(`Falha ao baixar imagem: ${errorMessage}`);
+    }
   }
 }
 
