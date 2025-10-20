@@ -61,11 +61,13 @@ export class ImageDownloadService {
 
   
   private async downloadSingleImage(url: string, index: number): Promise<ProcessedImage> {
-    this.logger.log(`[IMAGE_DOWNLOAD] Baixando imagem ${index + 1}: ${url}`);
+    // Substituir URL do Chatwoot para usar IP correto
+    const correctedUrl = url.replace('https://omnihitv2.omnihit.app.br', 'http://172.31.187.223:3000');
+    this.logger.log(`[IMAGE_DOWNLOAD] Baixando imagem ${index + 1}: ${correctedUrl}`);
 
     try {
       const response = await firstValueFrom(
-        this.httpService.get(url, {
+        this.httpService.get(correctedUrl, {
           responseType: 'arraybuffer',
           timeout: 60000,
           maxContentLength: this.maxFileSize,
