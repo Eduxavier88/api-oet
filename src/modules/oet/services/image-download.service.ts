@@ -67,8 +67,9 @@ export class ImageDownloadService {
       const response = await firstValueFrom(
         this.httpService.get(url, {
           responseType: 'arraybuffer',
-          timeout: 60000, 
+          timeout: 60000,
           maxContentLength: this.maxFileSize,
+          maxRedirects: 5,
         })
       );
 
