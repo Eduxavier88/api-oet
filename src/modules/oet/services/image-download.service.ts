@@ -1,5 +1,6 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 
 
@@ -9,7 +10,10 @@ export class ImageDownloadService {
   private readonly maxFileSize = 5 * 1024 * 1024; 
   private readonly allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService
+  ) {}
 
   
   async downloadImages(imageUrls: string[]): Promise<ProcessedImage[]> {
@@ -61,8 +65,9 @@ export class ImageDownloadService {
 
   
   private async downloadSingleImage(url: string, index: number): Promise<ProcessedImage> {
-    // Substituir URL do Chatwoot para usar IP correto
-    const correctedUrl = url.replace('https://omnihitv2.omnihit.app.br', 'http://172.31.187.223:3000');
+    // Substituir URL do Chatwoot para usar IP correto do servidor
+    const chatwootBaseUrl = this.configService.get<string>('CHATWOOT_BASE_URL') || 'http://172.31.187.223:3000';
+    const correctedUrl = url.replace('https://omnihitv2.omnihit.app.br', chatwootBaseUrl);
     this.logger.log(`[IMAGE_DOWNLOAD] Baixando imagem ${index + 1}: ${correctedUrl}`);
 
     try {
