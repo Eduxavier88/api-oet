@@ -29,93 +29,112 @@ export class ChatwootService {
 
 
   async getConversationMessages(conversationId: string, accountId: string = '1'): Promise<ChatwootConversationResponse> {
-    if (!this.token) {
-      throw new HttpException('Token do Chatwoot não configurado. Configure CHATWOOT_TOKEN nas variáveis de ambiente.', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    this.validateChatwootConfig();
 
-    if (!this.baseUrl) {
-      throw new HttpException('URL base do Chatwoot não configurada. Configure CHATWOOT_BASE_URL nas variáveis de ambiente.', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    const url = this.buildMessagesUrl(conversationId, accountId);
 
-    const url = `${this.baseUrl}/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`;
-    
     this.logger.log(`[CHATWOOT] Buscando mensagens da conversa ${conversationId} na conta ${accountId}`);
-    
     this.logger.log('[CHATWOOT] Preparando requisição de mensagens');
 
     try {
-      
-      let lastError: any;
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          this.logger.log(`[CHATWOOT] Tentativa ${attempt}/3`);
-          const response = await firstValueFrom(
-            this.httpService.get(url, {
-              headers: {
-                'api_access_token': this.token,
-                'Content-Type': 'application/json',
-              },
-              timeout: 30000, 
-            })
-          );
-
-                 this.logger.log(`[CHATWOOT] Resposta recebida: ${response.status}`);
-
-          return response.data;
-        } catch (error) {
-          lastError = error;
-          const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-          this.logger.warn(`[CHATWOOT] Tentativa ${attempt} falhou: ${errorMessage}`);
-          
-          
-          if (attempt < 3) {
-            await new Promise(resolve => setTimeout(resolve, 2000 * attempt)); 
-          }
-        }
-      }
-      
-     
-      throw lastError;
+      return await this.fetchWithRetry(url);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      this.logger.error(`[CHATWOOT] Erro ao buscar mensagens: ${errorMessage}`);
-      
-      if (error && typeof error === 'object' && 'response' in error) {
-        const httpError = error as any;
-        if (httpError.response?.status === 401) {
-          throw new HttpException('Token do Chatwoot inválido ou expirado', HttpStatus.UNAUTHORIZED);
-        }
-        
-        if (httpError.response?.status === 404) {
-          throw new HttpException('Conversa não encontrada no Chatwoot', HttpStatus.NOT_FOUND);
-        }
-      }
-      
-      throw new HttpException(
-        `Erro ao buscar mensagens no Chatwoot: ${errorMessage}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      this.mapChatwootError(error);
     }
   }
 
- 
-  
+  private validateChatwootConfig(): void {
+    if (!this.token) {
+      throw new HttpException('Token do Chatwoot não configurado. Configure CHATWOOT_TOKEN nas variáveis de ambiente.', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    if (!this.baseUrl) {
+      throw new HttpException('URL base do Chatwoot não configurada. Configure CHATWOOT_BASE_URL nas variáveis de ambiente.', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+
+  private buildMessagesUrl(conversationId: string, accountId: string): string {
+    return `${this.baseUrl}/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`;
+  }
+
+  /**
+   * @purpose Busca mensagens com retry e backoff exponencial simples
+   * @why Isolar a complexidade de tentativas e timeout
+   * @collaborators HttpService
+   * @inputs url
+   * @outputs ChatwootConversationResponse
+   * @sideEffects Aguarda (sleep) entre tentativas
+   * @errors Propaga o último erro após exaurir tentativas
+   * @examples await this.fetchWithRetry(url)
+   */
+  private async fetchWithRetry(url: string): Promise<ChatwootConversationResponse> {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        this.logger.log(`[CHATWOOT] Tentativa ${attempt}/3`);
+        const response = await firstValueFrom(
+          this.httpService.get(url, {
+            headers: {
+              'api_access_token': this.token,
+              'Content-Type': 'application/json',
+            },
+            timeout: 30000,
+          })
+        );
+        this.logger.log(`[CHATWOOT] Resposta recebida: ${response.status}`);
+        return response.data as ChatwootConversationResponse;
+      } catch (error) {
+        lastError = error;
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        this.logger.warn(`[CHATWOOT] Tentativa ${attempt} falhou: ${errorMessage}`);
+        if (attempt < 3) {
+          await this.sleep(2000 * attempt);
+        }
+      }
+    }
+    throw lastError;
+  }
+
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+
+  private mapChatwootError(error: unknown): never {
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    this.logger.error(`[CHATWOOT] Erro ao buscar mensagens: ${errorMessage}`);
+
+    const httpError = error as { response?: { status?: number } };
+    if (httpError?.response?.status === 401) {
+      throw new HttpException('Token do Chatwoot inválido ou expirado', HttpStatus.UNAUTHORIZED);
+    }
+    if (httpError?.response?.status === 404) {
+      throw new HttpException('Conversa não encontrada no Chatwoot', HttpStatus.NOT_FOUND);
+    }
+    throw new HttpException(
+      `Erro ao buscar mensagens no Chatwoot: ${errorMessage}`,
+      HttpStatus.INTERNAL_SERVER_ERROR
+    );
+  }
+
+
+
   extractImageUrls(messages: ChatwootMessage[]): string[] {
     const imageUrls: string[] = [];
     
-    messages.forEach(message => {
+    for (const message of messages) {
       if (message.attachments && message.attachments.length > 0) {
-        message.attachments.forEach(attachment => {
-          // Verifica se é uma imagem baseado no file_type
+        for (const attachment of message.attachments) {
           if (attachment.file_type === 'image') {
             const imageUrl = attachment.data_url || attachment.file_url;
             if (imageUrl) {
               imageUrls.push(imageUrl);
             }
           }
-        });
+        }
       }
-    });
+    }
 
     this.logger.log(`[CHATWOOT] Encontradas ${imageUrls.length} imagens na conversa`);
     return imageUrls;
@@ -133,7 +152,7 @@ export interface ChatwootConversationResponse {
 }
 
 
- 
+
 export interface ChatwootMessage {
   id: number;
   content: string;

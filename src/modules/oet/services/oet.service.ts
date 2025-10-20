@@ -28,79 +28,69 @@ export class OetService {
     private readonly imageDownloadService: ImageDownloadService
   ) {}
 
-  /**
-   * @purpose Executa o fluxo completo de criação de incidência OET
-   * @why Orquestrar todo o processo de criação de incidência
-   * @collaborators Todos os use cases do módulo OET
-   * @inputs Dados da incidência do Typebot
-   * @outputs Resposta da OET com task_id ou erro
-   * @sideEffects Chamadas para OET via SOAP
-   * @errors Retorna erros de validação, comunicação ou processamento
-   * @examples const result = await service.createIncident(incidentData)
-   */
+  
   async createIncident(data: CreateIncidentDto): Promise<OetIncidentResponse> {
-    // Verificação defensiva
+    
     if (!data) {
-      this.logger.error('[OET_SERVICE] Dados da requisição estão undefined');
-      return {
-        status: 'error',
-        code: 'VALIDATION_ERROR',
-        errors: ['Dados da requisição estão undefined']
-      };
+      return this.validationError(['Dados da requisição estão undefined']);
     }
 
-          const nit = data.nit_transp;
-          const maskedNit = typeof nit === 'string' && nit.length > 3 ? `***${nit.slice(-3)}` : 'N/A';
-          this.logger.log(`[OET_SERVICE] Iniciando criação de incidência para NIT: ${maskedNit}`);
     
-    // 1. Validar dados
+    this.logger.log(`[OET_SERVICE] Iniciando criação de incidência para NIT: ${this.maskNit(data.nit_transp)}`);
+
+   
     const validation = await this.validateIncidentUseCase.execute(data);
-    
     if (!validation.isValid) {
       this.logger.error(`[OET_SERVICE] Validação falhou: ${validation.errors.join(', ')}`);
-      return {
-        status: 'error',
-        code: 'VALIDATION_ERROR',
-        errors: validation.errors
-      };
+      return this.validationError(validation.errors);
     }
 
-    // 2. Buscar imagens do Chatwoot (se conversationId fornecido)
-    let chatwootImages: string[] = [];
-    if (data.conversationId) {
-      try {
-               this.logger.log(`[OET_SERVICE] Buscando imagens do Chatwoot para conversa: ${data.conversationId}`);
-        const chatwootResponse = await this.chatwootService.getConversationMessages(data.conversationId);
-        chatwootImages = this.chatwootService.extractImageUrls(chatwootResponse.payload);
-               this.logger.log(`[OET_SERVICE] Encontradas ${chatwootImages.length} imagens no Chatwoot`);
-      } catch (error) {
-        this.logger.warn(`[OET_SERVICE] Erro ao buscar imagens do Chatwoot: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-        // Continua o fluxo mesmo se falhar
-      }
-    }
+    
+    const chatwootImageUrls = await this.getChatwootImageUrls(data.conversationId);
 
-    // 3. Baixar e converter imagens do Chatwoot
-    let processedChatwootImages: any[] = [];
-    if (chatwootImages.length > 0) {
-      try {
-        this.logger.log(`[OET_SERVICE] Baixando ${chatwootImages.length} imagens do Chatwoot`);
-        processedChatwootImages = await this.imageDownloadService.downloadImages(chatwootImages);
-        this.logger.log(`[OET_SERVICE] ${processedChatwootImages.length} imagens do Chatwoot processadas com sucesso`);
-      } catch (error) {
-        this.logger.warn(`[OET_SERVICE] Erro ao processar imagens do Chatwoot: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-        // Continua o fluxo mesmo se falhar
-      }
-    }
+    
+    const processedFiles = await this.processChatwootImages(chatwootImageUrls);
+    this.logger.log(`[OET_SERVICE] Total de arquivos processados: ${processedFiles.length}`);
 
-    // 4. Usar apenas imagens do Chatwoot (Typebot não envia arquivos)
-    const allProcessedFiles = processedChatwootImages;
-    this.logger.log(`[OET_SERVICE] Total de arquivos processados: ${allProcessedFiles.length}`);
-
-    // 6. Transformar para SOAP
+    
     const soapRequest = await this.transformToSoapUseCase.execute(data);
+    this.logger.log('[OET_SERVICE] Enviando para OET...');
+    return this.callOetSoapUseCase.execute(soapRequest, processedFiles);
+  }
 
-    // 7. Chamar OET
-    this.logger.log(`[OET_SERVICE] Enviando para OET...`);
-    return this.callOetSoapUseCase.execute(soapRequest, allProcessedFiles);
+  
+  private validationError(errors: string[]): OetIncidentResponse {
+    return { status: 'error', code: 'VALIDATION_ERROR', errors };
+  }
+
+  private maskNit(nit: string | undefined): string {
+    return typeof nit === 'string' && nit.length > 3 ? `***${nit.slice(-3)}` : 'N/A';
+  }
+
+  private async getChatwootImageUrls(conversationId?: string): Promise<string[]> {
+    if (!conversationId) return [];
+    try {
+      this.logger.log(`[OET_SERVICE] Buscando imagens do Chatwoot para conversa: ${conversationId}`);
+      const chatwootResponse = await this.chatwootService.getConversationMessages(conversationId);
+      const urls = this.chatwootService.extractImageUrls(chatwootResponse.payload);
+      this.logger.log(`[OET_SERVICE] Encontradas ${urls.length} imagens no Chatwoot`);
+      return urls;
+    } catch (error) {
+      this.logger.warn(`[OET_SERVICE] Erro ao buscar imagens do Chatwoot: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      return [];
+    }
+  }
+
+  private async processChatwootImages(imageUrls: string[]): Promise<any[]> {
+    if (imageUrls.length === 0) return [];
+    try {
+      this.logger.log(`[OET_SERVICE] Baixando ${imageUrls.length} imagens do Chatwoot`);
+      const files = await this.imageDownloadService.downloadImages(imageUrls);
+      this.logger.log(`[OET_SERVICE] ${files.length} imagens do Chatwoot processadas com sucesso`);
+      return files;
+    } catch (error) {
+      this.logger.warn(`[OET_SERVICE] Erro ao processar imagens do Chatwoot: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      return [];
+    }
   }
 }

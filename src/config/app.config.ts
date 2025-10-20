@@ -37,11 +37,11 @@ export interface AppConfig {
  * Configuração da aplicação com valores padrão e validação
  */
 export const appConfig: AppConfig = {
-  port: parseInt(process.env['PORT'] || '3000', 10),
+  port: Number.parseInt(process.env['PORT'] || '3000', 10),
   nodeEnv: process.env['NODE_ENV'] || 'development',
   allowedOrigins: process.env['ALLOWED_ORIGINS']?.split(',') || ['*'],
-  httpTimeout: parseInt(process.env['HTTP_TIMEOUT'] || '15000', 10),
-  maxRetries: parseInt(process.env['MAX_RETRIES'] || '2', 10),
+  httpTimeout: Number.parseInt(process.env['HTTP_TIMEOUT'] || '15000', 10),
+  maxRetries: Number.parseInt(process.env['MAX_RETRIES'] || '2', 10),
   
   oet: {
     wsdlUrl: process.env['OET_WSDL_URL'] || '',
@@ -51,9 +51,9 @@ export const appConfig: AppConfig = {
   },
   
   files: {
-    maxFileSize: parseInt(process.env['MAX_FILE_SIZE'] || '5242880', 10), // 5MB
-    maxTotalFileSize: parseInt(process.env['MAX_TOTAL_FILE_SIZE'] || '26214400', 10), // 25MB
-    maxFilesCount: parseInt(process.env['MAX_FILES_COUNT'] || '10', 10),
+    maxFileSize: Number.parseInt(process.env['MAX_FILE_SIZE'] || '5242880', 10), // 5MB
+    maxTotalFileSize: Number.parseInt(process.env['MAX_TOTAL_FILE_SIZE'] || '26214400', 10), // 25MB
+    maxFilesCount: Number.parseInt(process.env['MAX_FILES_COUNT'] || '10', 10),
   },
   
   chatwoot: {
@@ -63,9 +63,7 @@ export const appConfig: AppConfig = {
   },
 };
 
-/**
- * Valida se todas as configurações obrigatórias estão presentes
- */
+
 export function validateConfig(): void {
   const requiredEnvVars = [
     'OET_WSDL_URL',

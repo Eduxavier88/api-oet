@@ -24,13 +24,13 @@ export class CallOetSoapUseCase {
 
   async execute(soapRequest: any, processedFiles: any[]): Promise<OetIncidentResponse> {
     try {
-      // Construir envelope SOAP
+      
       const soapEnvelope = this.buildSoapEnvelope(soapRequest, processedFiles);
       
-      // Log resumido para debug (sem base64)
+      
       this.logger.log(`[DEBUG] SOAP Envelope enviado (${processedFiles.length} arquivos)`);
       
-      // URL do WSDL OET
+      
       const wsdlUrl = this.configService.get<string>('OET_WSDL_URL');
       if (!wsdlUrl) {
         throw new Error('OET_WSDL_URL não configurada');
@@ -48,8 +48,6 @@ export class CallOetSoapUseCase {
           timeout: this.configService.get<number>('HTTP_TIMEOUT') || 15000
         }
       );
-
-      // Log da resposta da OET
       this.logger.log(`[DEBUG] OET Response Status: ${response.status}`);
       this.logger.log(`[DEBUG] OET Response Data: ${response.data}`);
 
@@ -90,7 +88,8 @@ export class CallOetSoapUseCase {
     // Adicionar arquivos processados se existirem
     if (processedFiles && processedFiles.length > 0) {
       this.logger.log(`[SOAP] Incluindo ${processedFiles.length} arquivos no SOAP`);
-      processedFiles.forEach((file, index) => {
+      for (let index = 0; index < processedFiles.length; index += 1) {
+        const file = processedFiles[index];
         // Evitar logar nomes reais de arquivo
         this.logger.log(`[SOAP] Arquivo ${index + 1}: (${file.size} bytes, ${file.contentType})`);
         soapBody += `
@@ -100,7 +99,7 @@ export class CallOetSoapUseCase {
                 <nom_filexx>file-${index + 1}</nom_filexx>
                 <tip_attach>${file.contentType}</tip_attach>
               </item>`;
-      });
+      }
     } else {
       
       soapBody += `
@@ -129,17 +128,16 @@ export class CallOetSoapUseCase {
 
   private parseSoapResponse(soapResponse: string): OetIncidentResponse {
     // Extrair código de resposta - OET usa namespaces diferentes
-    const codeMatch = soapResponse.match(/<code_resp[^>]*>(\d+)<\/code_resp>/);
-    const msgMatch = soapResponse.match(/<msg_resp[^>]*>(.*?)<\/msg_resp>/);
-    
-    const code = codeMatch?.[1];
-    const message = msgMatch?.[1];
+    const codeRe = /<code_resp[^>]*>(\d+)<\/code_resp>/;
+    const msgRe = /<msg_resp[^>]*>(.*?)<\/msg_resp>/;
+    const code = codeRe.exec(soapResponse)?.[1];
+    const message = msgRe.exec(soapResponse)?.[1];
 
-    // Não logar mensagem completa para evitar PII
+    // Não logar mensagem completa para evitar PI
     if (code === '1000') {
-      // Extrair task_id da mensagem
-      const taskIdMatch = message?.match(/La Tarea (\d+)/);
-      const taskId = taskIdMatch?.[1];
+      
+      const taskIdRe = /La Tarea (\d+)/;
+      const taskId = taskIdRe.exec(message || '')?.[1];
       
       return {
         status: 'ok',

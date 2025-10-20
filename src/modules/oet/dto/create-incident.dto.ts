@@ -5,7 +5,7 @@ export class CreateIncidentDto {
   @IsNotEmpty({ message: 'NIT é obrigatório' })
   @MinLength(5, { message: 'NIT deve ter pelo menos 5 caracteres' })
   @MaxLength(50, { message: 'NIT deve ter no máximo 50 caracteres' })
-  @Matches(/^[\d\-]+$/, { message: 'NIT deve conter apenas números e hífens' })
+  @Matches(/^[\d-]+$/, { message: 'NIT deve conter apenas números e hífens' })
   nit_transp!: string;
 
   @IsString()
@@ -35,12 +35,12 @@ export class CreateIncidentDto {
   @IsNotEmpty({ message: 'Telefone é obrigatório' })
   @MinLength(7, { message: 'Telefone deve ter pelo menos 7 caracteres' })
   @MaxLength(20, { message: 'Telefone deve ter no máximo 20 caracteres' })
-  @Matches(/^\+?[\d\s\-\(\)]+$/, { message: 'Formato de telefone inválido' })
+  @Matches(/^\+?[\d\s()\-]+$/, { message: 'Formato de telefone inválido' })
   phone_user!: string;
 
   @IsOptional()
   @IsString()
-  files_urls?: string; // Campo mantido para compatibilidade (não utilizado)
+  files_urls?: string; 
 
   @IsOptional()
   @IsString()

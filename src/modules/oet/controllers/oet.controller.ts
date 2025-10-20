@@ -13,16 +13,16 @@ export class OetController {
   @Post('incidents')
   @HttpCode(HttpStatus.OK)
   async createIncident(
-    @Body() createIncidentDto: any, // Mudado para any para capturar dados brutos
+    @Body() createIncidentDto: any, 
     @Headers('x-request-id') _requestId?: string,
   ): Promise<OetIncidentResponse> {
-    // Log resumido da requisição (mascarando NIT)
+    
     const rawNit = createIncidentDto?.nit_transp;
     const maskedNit = typeof rawNit === 'string' && rawNit.length > 3 ? `***${rawNit.slice(-3)}` : 'N/A';
     this.logger.log(`[REQUEST] Nova requisição recebida - NIT: ${maskedNit}`);
     
     try {
-      // Verificar se o body está vazio ou undefined
+      
       if (!createIncidentDto || Object.keys(createIncidentDto).length === 0) {
         this.logger.error('[ERROR] Body da requisição está vazio ou undefined');
         return {
@@ -34,12 +34,11 @@ export class OetController {
 
       const result = await this.oetService.createIncident(createIncidentDto);
       
-      // Log resumido da resposta
-      this.logger.log(`[RESPONSE] Status: ${result.status}${result.task_id ? ` - Task ID: ${result.task_id}` : ''}`);
-      
+      const taskPart = result.task_id ? ' - Task ID: ' + result.task_id : '';
+      this.logger.log(`[RESPONSE] Status: ${result.status}${taskPart}`);
       return result;
     } catch (error) {
-      // Log de erro
+     
       this.logger.error(`[ERROR] ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       this.logger.error(`[ERROR] Stack: ${error instanceof Error ? error.stack : 'N/A'}`);
       throw error;
