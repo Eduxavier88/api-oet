@@ -23,7 +23,7 @@ export class ChatwootService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.baseUrl = this.configService.get<string>('CHATWOOT_BASE_URL') || '';
+    this.baseUrl = this.configService.get<string>('CHATWOOT_BASE_URL') || 'http://172.31.187.223:3000';
     this.token = this.configService.get<string>('CHATWOOT_TOKEN') || '';
   }
 
