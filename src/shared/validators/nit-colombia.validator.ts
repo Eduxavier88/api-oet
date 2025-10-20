@@ -39,7 +39,7 @@ function validateInput(nit: string): void {
  */
 function validateFormat(nit: string): void {
   // Verificar caracteres válidos
-  if (!/^[\d\-]+$/.test(nit)) {
+  if (!/^[\d-]+$/.test(nit)) {
     throw new Error('NIT deve conter apenas números e hífen');
   }
 
@@ -97,7 +97,7 @@ function calculateCheckDigit(digits: string): string {
     const digit = digits[i];
     const weight = weights[i];
     if (digit !== undefined && weight !== undefined) {
-      sum += parseInt(digit, 10) * weight;
+      sum += Number.parseInt(digit, 10) * weight;
     }
   }
   

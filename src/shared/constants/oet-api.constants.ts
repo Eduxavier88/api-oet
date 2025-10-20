@@ -16,7 +16,7 @@ export const VALIDATION_RULES = {
   NIT_TRANSP: {
     MIN_LENGTH: 5,
     MAX_LENGTH: 50,
-    PATTERN: /^[\d\-]+$/,
+    PATTERN: /^[\d-]+$/,
   },
   CONTACT_NAME: {
     MIN_LENGTH: 3,
@@ -37,7 +37,7 @@ export const VALIDATION_RULES = {
   PHONE_USER: {
     MIN_LENGTH: 7,
     MAX_LENGTH: 20,
-    PATTERN: /^\+?[\d\s\-\(\)]+$/,
+    PATTERN: /^\+?[\d\s()\-]+$/,
   },
   COD_PRODUCT: {
     MAX_LENGTH: 50,
@@ -50,8 +50,8 @@ export const VALIDATION_RULES = {
  */
 export const FILE_LIMITS = {
   MAX_FILES_COUNT: 10,
-  MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-  MAX_TOTAL_SIZE: 25 * 1024 * 1024, // 25MB
+  MAX_FILE_SIZE: 5 * 1024 * 1024, 
+  MAX_TOTAL_SIZE: 25 * 1024 * 1024,
 } as const;
 
 /**

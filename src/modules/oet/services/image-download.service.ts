@@ -27,21 +27,22 @@ export class ImageDownloadService {
 
     try {
       const results = await Promise.allSettled(downloadPromises);
-      
       const successful: ProcessedImage[] = [];
       const failed: string[] = [];
-
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
-          successful.push(result.value);
-        } else {
+      for (let index = 0; index < results.length; index += 1) {
+        const settled = results[index];
+        if (settled && settled.status === 'fulfilled') {
+          const fulfilled = settled as PromiseFulfilledResult<ProcessedImage>;
+          successful.push(fulfilled.value);
+        } else if (settled && settled.status === 'rejected') {
           const failedUrl = imageUrls[index];
           if (failedUrl) {
             failed.push(failedUrl);
-            this.logger.error(`[IMAGE_DOWNLOAD] Falha ao processar ${failedUrl}: ${result.reason}`);
+            const rejected = settled as PromiseRejectedResult;
+            this.logger.error(`[IMAGE_DOWNLOAD] Falha ao processar ${failedUrl}: ${rejected.reason}`);
           }
         }
-      });
+      }
 
       this.logger.log(`[IMAGE_DOWNLOAD] Sucesso: ${successful.length}, Falhas: ${failed.length}`);
       

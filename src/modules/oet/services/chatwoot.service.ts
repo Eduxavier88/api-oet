@@ -122,20 +122,17 @@ export class ChatwootService {
 
   extractImageUrls(messages: ChatwootMessage[]): string[] {
     const imageUrls: string[] = [];
-    
     for (const message of messages) {
-      if (message.attachments && message.attachments.length > 0) {
-        for (const attachment of message.attachments) {
-          if (attachment.file_type === 'image') {
-            const imageUrl = attachment.data_url || attachment.file_url;
-            if (imageUrl) {
-              imageUrls.push(imageUrl);
-            }
+      const attachments = message.attachments ?? [];
+      for (const attachment of attachments) {
+        if (attachment.file_type === 'image') {
+          const imageUrl = attachment.data_url || attachment.file_url;
+          if (imageUrl) {
+            imageUrls.push(imageUrl);
           }
         }
       }
     }
-
     this.logger.log(`[CHATWOOT] Encontradas ${imageUrls.length} imagens na conversa`);
     return imageUrls;
   }

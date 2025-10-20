@@ -33,9 +33,7 @@ export interface AppConfig {
   };
 }
 
-/**
- * Configuração da aplicação com valores padrão e validação
- */
+
 export const appConfig: AppConfig = {
   port: Number.parseInt(process.env['PORT'] || '3000', 10),
   nodeEnv: process.env['NODE_ENV'] || 'development',

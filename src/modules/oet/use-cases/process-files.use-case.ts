@@ -40,8 +40,8 @@ export class ProcessFilesUseCase {
         throw new Error('Formato base64 inválido');
       }
       
-      const mimeMatch = header.match(/data:([^;]+)/);
-      const mimeType = mimeMatch?.[1] || 'application/octet-stream';
+      const mimeRe = /data:([^;]+)/;
+      const mimeType = mimeRe.exec(header)?.[1] || 'application/octet-stream';
       
       // Converter base64 para buffer para calcular tamanho
       const buffer = Buffer.from(base64Data, 'base64');

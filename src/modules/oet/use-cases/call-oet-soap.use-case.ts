@@ -36,7 +36,7 @@ export class CallOetSoapUseCase {
         throw new Error('OET_WSDL_URL não configurada');
       }
       
-      // Fazer chamada SOAP
+      
       const response = await this.httpService.axiosRef.post(
         wsdlUrl,
         soapEnvelope,
@@ -51,11 +51,11 @@ export class CallOetSoapUseCase {
       this.logger.log(`[DEBUG] OET Response Status: ${response.status}`);
       this.logger.log(`[DEBUG] OET Response Data: ${response.data}`);
 
-      // Processar resposta SOAP
+     
       return this.parseSoapResponse(response.data);
       
     } catch (error: unknown) {
-      // Tratar erros de rede/timeout
+     
       if (error instanceof Error && error.message?.includes('timeout')) {
         return {
           status: 'error',
@@ -90,7 +90,7 @@ export class CallOetSoapUseCase {
       this.logger.log(`[SOAP] Incluindo ${processedFiles.length} arquivos no SOAP`);
       for (let index = 0; index < processedFiles.length; index += 1) {
         const file = processedFiles[index];
-        // Evitar logar nomes reais de arquivo
+        
         this.logger.log(`[SOAP] Arquivo ${index + 1}: (${file.size} bytes, ${file.contentType})`);
         soapBody += `
               <item>
@@ -133,7 +133,7 @@ export class CallOetSoapUseCase {
     const code = codeRe.exec(soapResponse)?.[1];
     const message = msgRe.exec(soapResponse)?.[1];
 
-    // Não logar mensagem completa para evitar PI
+    // Não logar mensagem completa para evitar PII
     if (code === '1000') {
       
       const taskIdRe = /La Tarea (\d+)/;
