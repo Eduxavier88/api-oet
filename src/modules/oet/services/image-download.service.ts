@@ -67,12 +67,10 @@ export class ImageDownloadService {
   private async downloadSingleImage(url: string, index: number): Promise<ProcessedImage> {
     // Substituir URL do Chatwoot para usar IP correto do servidor
     const chatwootBaseUrl = this.configService.get<string>('CHATWOOT_BASE_URL') || 'http://172.31.187.223:3000';
-    const originalBaseUrl = this.configService.get<string>('CHATWOOT_ORIGINAL_BASE_URL');
-    if (!originalBaseUrl) {
-      this.logger.warn('[IMAGE_DOWNLOAD] CHATWOOT_ORIGINAL_BASE_URL não configurado, usando URL original');
-      return this.downloadSingleImageOriginal(url, index);
-    }
-    const correctedUrl = url.replace(originalBaseUrl, chatwootBaseUrl);
+    
+    // Substituir qualquer URL que contenha 'omnihitv2.omnihit.app.br' pelo IP do servidor
+    const correctedUrl = url.replace(/https?:\/\/[^\/]*omnihitv2\.omnihit\.app\.br/, chatwootBaseUrl);
+    
     this.logger.log(`[IMAGE_DOWNLOAD] Baixando imagem ${index + 1}: ${correctedUrl}`);
 
     try {
