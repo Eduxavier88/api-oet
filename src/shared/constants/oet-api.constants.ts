@@ -37,7 +37,7 @@ export const VALIDATION_RULES = {
   PHONE_USER: {
     MIN_LENGTH: 7,
     MAX_LENGTH: 20,
-    PATTERN: /^\+?[\d\s()\-]+$/,
+    PATTERN: /^\+?[\d\s()-]+$/,
   },
   COD_PRODUCT: {
     MAX_LENGTH: 50,

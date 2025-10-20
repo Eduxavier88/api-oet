@@ -62,7 +62,7 @@ describe('ImageDownloadService - Unit Tests', () => {
         },
         status: 200,
         statusText: 'OK',
-        config: {}
+        config: { headers: undefined as any }
       };
 
       const mockResponse2 = {
@@ -73,7 +73,7 @@ describe('ImageDownloadService - Unit Tests', () => {
         },
         status: 200,
         statusText: 'OK',
-        config: {}
+        config: { headers: undefined as any }
       };
 
       httpService.get
@@ -133,7 +133,7 @@ describe('ImageDownloadService - Unit Tests', () => {
         },
         status: 200,
         statusText: 'OK',
-        config: {}
+        config: { headers: undefined as any }
       };
 
       httpService.get
@@ -161,7 +161,7 @@ describe('ImageDownloadService - Unit Tests', () => {
         },
         status: 200,
         statusText: 'OK',
-        config: {}
+        config: { headers: undefined as any }
       };
 
       httpService.get.mockReturnValue(of(mockResponse));
@@ -186,10 +186,152 @@ describe('ImageDownloadService - Unit Tests', () => {
         },
         status: 200,
         statusText: 'OK',
-        config: {}
+        config: { headers: undefined as any }
       };
 
       httpService.get.mockReturnValue(of(mockResponse));
+
+      // Act
+      const result = await service.downloadImages(imageUrls);
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+
+    it('should handle empty file size', async () => {
+      // Arrange
+      const imageUrls = ['https://example.com/empty.jpg'];
+      const mockData = Buffer.from('');
+
+      const mockResponse = {
+        data: mockData,
+        headers: {
+          'content-type': 'image/jpeg',
+          'content-length': '0'
+        },
+        status: 200,
+        statusText: 'OK',
+        config: { headers: undefined as any }
+      };
+
+      httpService.get.mockReturnValue(of(mockResponse));
+
+      // Act
+      const result = await service.downloadImages(imageUrls);
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+
+    it('should handle undefined content-length header', async () => {
+      // Arrange
+      const imageUrls = ['https://example.com/image.jpg'];
+      const mockData = Buffer.from('fake-image-data');
+
+      const mockResponse = {
+        data: mockData,
+        headers: {
+          'content-type': 'image/jpeg',
+          'content-length': undefined
+        },
+        status: 200,
+        statusText: 'OK',
+        config: { headers: undefined as any }
+      };
+
+      httpService.get.mockReturnValue(of(mockResponse));
+
+      // Act
+      const result = await service.downloadImages(imageUrls);
+
+      // Assert
+      expect(result).toEqual([]);
+    });
+
+    it('should handle filename generation with URL path', async () => {
+      // Arrange
+      const imageUrls = ['https://example.com/path/to/image.jpg'];
+      const mockData = Buffer.from('fake-image-data');
+
+      const mockResponse = {
+        data: mockData,
+        headers: {
+          'content-type': 'image/jpeg',
+          'content-length': '16'
+        },
+        status: 200,
+        statusText: 'OK',
+        config: { headers: undefined as any }
+      };
+
+      httpService.get.mockReturnValue(of(mockResponse));
+
+      // Act
+      const result = await service.downloadImages(imageUrls);
+
+      // Assert
+      expect(result).toHaveLength(1);
+      expect(result[0].filename).toBe('image.jpg');
+    });
+
+    it('should handle filename generation with invalid URL', async () => {
+      // Arrange
+      const imageUrls = ['invalid-url'];
+      const mockData = Buffer.from('fake-image-data');
+
+      const mockResponse = {
+        data: mockData,
+        headers: {
+          'content-type': 'image/jpeg',
+          'content-length': '16'
+        },
+        status: 200,
+        statusText: 'OK',
+        config: { headers: undefined as any }
+      };
+
+      httpService.get.mockReturnValue(of(mockResponse));
+
+      // Act
+      const result = await service.downloadImages(imageUrls);
+
+      // Assert
+      expect(result).toHaveLength(1);
+      expect(result[0].filename).toMatch(/^image_\d+\.jpeg$/);
+    });
+
+    it('should handle filename generation with URL without extension', async () => {
+      // Arrange
+      const imageUrls = ['https://example.com/image'];
+      const mockData = Buffer.from('fake-image-data');
+
+      const mockResponse = {
+        data: mockData,
+        headers: {
+          'content-type': 'image/jpeg',
+          'content-length': '16'
+        },
+        status: 200,
+        statusText: 'OK',
+        config: { headers: undefined as any }
+      };
+
+      httpService.get.mockReturnValue(of(mockResponse));
+
+      // Act
+      const result = await service.downloadImages(imageUrls);
+
+      // Assert
+      expect(result).toHaveLength(1);
+      expect(result[0].filename).toMatch(/^image_\d+\.jpeg$/);
+    });
+
+    it('should handle general error in downloadImages', async () => {
+      // Arrange
+      const imageUrls = ['https://example.com/image.jpg'];
+
+      // Mock a general error
+      httpService.get.mockReturnValue(throwError(() => new Error('General error')));
 
       // Act
       const result = await service.downloadImages(imageUrls);

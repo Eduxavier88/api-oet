@@ -264,5 +264,173 @@ describe('CallOetSoapUseCase - Unit Tests', () => {
         message: 'Erro desconhecido'
       });
     });
+
+    it('should handle OET parent task error (code 1001)', async () => {
+      // Arrange
+      const soapRequest = {
+        nom_usuari: 'Juan Pérez',
+        ema_usuari: 'juan@example.com',
+        tex_messag: 'Error en el sistema',
+        asu_messag: 'Error del Sistema',
+        tel_usuari: '+57 300 1234567',
+        nit_transp: '900123456',
+        id_project: '5678',
+        nom_usulog: 'test_user',
+        pwd_usulog: 'test_pass'
+      };
+
+      const processedFiles: any[] = [];
+
+      const mockSoapParentTaskErrorResponse = {
+        data: `<?xml version="1.0" encoding="UTF-8"?>
+        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+          <soap:Body>
+            <setSoportResponse>
+              <code_resp>1001</code_resp>
+              <msg_resp>Error en tarea padre</msg_resp>
+            </setSoportResponse>
+          </soap:Body>
+        </soap:Envelope>`
+      };
+
+      const mockPost = jest.fn().mockResolvedValue(mockSoapParentTaskErrorResponse);
+      httpService.axiosRef.post = mockPost;
+
+      // Act
+      const result = await useCase.execute(soapRequest, processedFiles);
+
+      // Assert
+      expect(result).toEqual({
+        status: 'error',
+        code: 'OET_PARENT_TASK_ERROR',
+        oet_code: '1001',
+        message: 'Error en tarea padre'
+      });
+    });
+
+    it('should handle missing WSDL URL configuration', async () => {
+      // Arrange
+      const module: TestingModule = await Test.createTestingModule({
+        imports: [HttpModule],
+        providers: [
+          CallOetSoapUseCase,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: (key: string) => {
+                if (key === 'HTTP_TIMEOUT') {
+                  return 15000;
+                }
+                return undefined as any;
+              }
+            }
+          }
+        ],
+      }).compile();
+
+      const useCaseWithoutWSDL = module.get<CallOetSoapUseCase>(CallOetSoapUseCase);
+      const httpServiceWithoutWSDL = module.get<HttpService>(HttpService);
+
+      const soapRequest = {
+        nom_usuari: 'Juan Pérez',
+        ema_usuari: 'juan@example.com',
+        tex_messag: 'Error en el sistema',
+        asu_messag: 'Error del Sistema',
+        tel_usuari: '+57 300 1234567',
+        nit_transp: '900123456',
+        id_project: '5678',
+        nom_usulog: 'test_user',
+        pwd_usulog: 'test_pass'
+      };
+
+      const processedFiles: any[] = [];
+
+      // Act & Assert
+      await expect(useCaseWithoutWSDL.execute(soapRequest, processedFiles)).rejects.toThrow('OET_WSDL_URL não configurada');
+    });
+
+    it('should handle SOAP response with missing task ID in success message', async () => {
+      // Arrange
+      const soapRequest = {
+        nom_usuari: 'Juan Pérez',
+        ema_usuari: 'juan@example.com',
+        tex_messag: 'Error en el sistema',
+        asu_messag: 'Error del Sistema',
+        tel_usuari: '+57 300 1234567',
+        nit_transp: '900123456',
+        id_project: '5678',
+        nom_usulog: 'test_user',
+        pwd_usulog: 'test_pass'
+      };
+
+      const processedFiles: any[] = [];
+
+      const mockSoapResponseWithoutTaskId = {
+        data: `<?xml version="1.0" encoding="UTF-8"?>
+        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+          <soap:Body>
+            <setSoportResponse>
+              <code_resp>1000</code_resp>
+              <msg_resp>Se Crea Con Exito La Tarea</msg_resp>
+            </setSoportResponse>
+          </soap:Body>
+        </soap:Envelope>`
+      };
+
+      const mockPost = jest.fn().mockResolvedValue(mockSoapResponseWithoutTaskId);
+      httpService.axiosRef.post = mockPost;
+
+      // Act
+      const result = await useCase.execute(soapRequest, processedFiles);
+
+      // Assert
+      expect(result).toEqual({
+        status: 'ok',
+        task_id: undefined,
+        message: 'Se Crea Con Exito La Tarea'
+      });
+    });
+
+    it('should handle SOAP response with missing message', async () => {
+      // Arrange
+      const soapRequest = {
+        nom_usuari: 'Juan Pérez',
+        ema_usuari: 'juan@example.com',
+        tex_messag: 'Error en el sistema',
+        asu_messag: 'Error del Sistema',
+        tel_usuari: '+57 300 1234567',
+        nit_transp: '900123456',
+        id_project: '5678',
+        nom_usulog: 'test_user',
+        pwd_usulog: 'test_pass'
+      };
+
+      const processedFiles: any[] = [];
+
+      const mockSoapResponseWithoutMessage = {
+        data: `<?xml version="1.0" encoding="UTF-8"?>
+        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+          <soap:Body>
+            <setSoportResponse>
+              <code_resp>9999</code_resp>
+            </setSoportResponse>
+          </soap:Body>
+        </soap:Envelope>`
+      };
+
+      const mockPost = jest.fn().mockResolvedValue(mockSoapResponseWithoutMessage);
+      httpService.axiosRef.post = mockPost;
+
+      // Act
+      const result = await useCase.execute(soapRequest, processedFiles);
+
+      // Assert
+      expect(result).toEqual({
+        status: 'error',
+        code: 'OET_ERROR',
+        oet_code: '9999',
+        message: 'Erro desconhecido da OET'
+      });
+    });
   });
 });

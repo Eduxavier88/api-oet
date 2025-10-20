@@ -28,7 +28,7 @@ export function IsNitColombia(validationOptions?: ValidationOptions) {
           try {
             validateNitColombia(value);
             return true;
-          } catch (error) {
+          } catch {
             return false;
           }
         },

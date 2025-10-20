@@ -198,5 +198,137 @@ describe('OetService - Unit Tests', () => {
       expect(transformToSoapUseCase.execute).not.toHaveBeenCalled();
       expect(callOetSoapUseCase.execute).not.toHaveBeenCalled();
     });
+
+    it('should handle undefined data', async () => {
+      // Act
+      const result = await service.createIncident(undefined as any);
+
+      // Assert
+      expect(result.status).toBe('error');
+      expect(result.code).toBe('VALIDATION_ERROR');
+      expect(result.errors).toEqual(['Dados da requisição estão undefined']);
+    });
+
+    it('should handle Chatwoot service errors gracefully', async () => {
+      // Arrange
+      const incidentData = {
+        nit_transp: '900123456',
+        contact_name: 'Juan Pérez',
+        client_email: 'juan@example.com',
+        description: 'Error en el sistema',
+        subject_name: 'Error del Sistema',
+        phone_user: '+57 300 1234567',
+        conversationId: '33809'
+      };
+
+      // Mock validation success
+      validateIncidentUseCase.execute.mockResolvedValue({
+        isValid: true,
+        errors: []
+      });
+
+      // Mock Chatwoot service error
+      chatwootService.getConversationMessages.mockRejectedValue(new Error('Chatwoot error'));
+
+      transformToSoapUseCase.execute.mockResolvedValue({
+        nom_usuari: 'Juan Pérez',
+        ema_usuari: 'juan@example.com',
+        tex_messag: 'Error en el sistema',
+        asu_messag: 'Error del Sistema',
+        tel_usuari: '+57 300 1234567',
+        nit_transp: '900123456',
+        id_project: '52',
+        nom_usulog: 'test_user',
+        pwd_usulog: 'test_pass'
+      });
+
+      callOetSoapUseCase.execute.mockResolvedValue({
+        status: 'ok',
+        task_id: '314245',
+        message: 'Se Crea Con Exito La Tarea 314245'
+      });
+
+      // Act
+      const result = await service.createIncident(incidentData);
+
+      // Assert
+      expect(result.status).toBe('ok');
+      expect(result.task_id).toBe('314245');
+      
+      // Verify Chatwoot was called but error was handled
+      expect(chatwootService.getConversationMessages).toHaveBeenCalledWith('33809');
+      expect(imageDownloadService.downloadImages).not.toHaveBeenCalled();
+    });
+
+    it('should handle image download errors gracefully', async () => {
+      // Arrange
+      const incidentData = {
+        nit_transp: '900123456',
+        contact_name: 'Juan Pérez',
+        client_email: 'juan@example.com',
+        description: 'Error en el sistema',
+        subject_name: 'Error del Sistema',
+        phone_user: '+57 300 1234567',
+        conversationId: '33809'
+      };
+
+      // Mock validation success
+      validateIncidentUseCase.execute.mockResolvedValue({
+        isValid: true,
+        errors: []
+      });
+
+      // Mock Chatwoot service success
+      chatwootService.getConversationMessages.mockResolvedValue({
+        payload: [
+          {
+            id: 1,
+            content: 'test',
+            message_type: 'incoming',
+            created_at: '2023-01-01',
+            attachments: [
+              {
+                id: 1,
+                file_type: 'image',
+                data_url: 'https://example.com/image.jpg',
+                file_size: 1024
+              }
+            ]
+          }
+        ]
+      });
+      chatwootService.extractImageUrls.mockReturnValue(['https://example.com/image.jpg']);
+
+      // Mock ImageDownloadService error
+      imageDownloadService.downloadImages.mockRejectedValue(new Error('Download error'));
+
+      transformToSoapUseCase.execute.mockResolvedValue({
+        nom_usuari: 'Juan Pérez',
+        ema_usuari: 'juan@example.com',
+        tex_messag: 'Error en el sistema',
+        asu_messag: 'Error del Sistema',
+        tel_usuari: '+57 300 1234567',
+        nit_transp: '900123456',
+        id_project: '52',
+        nom_usulog: 'test_user',
+        pwd_usulog: 'test_pass'
+      });
+
+      callOetSoapUseCase.execute.mockResolvedValue({
+        status: 'ok',
+        task_id: '314245',
+        message: 'Se Crea Con Exito La Tarea 314245'
+      });
+
+      // Act
+      const result = await service.createIncident(incidentData);
+
+      // Assert
+      expect(result.status).toBe('ok');
+      expect(result.task_id).toBe('314245');
+      
+      // Verify image download was called but error was handled
+      expect(imageDownloadService.downloadImages).toHaveBeenCalledWith(['https://example.com/image.jpg']);
+    });
   });
 });

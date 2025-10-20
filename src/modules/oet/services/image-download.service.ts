@@ -32,14 +32,12 @@ export class ImageDownloadService {
       for (let index = 0; index < results.length; index += 1) {
         const settled = results[index];
         if (settled && settled.status === 'fulfilled') {
-          const fulfilled = settled as PromiseFulfilledResult<ProcessedImage>;
-          successful.push(fulfilled.value);
+          successful.push(settled.value);
         } else if (settled && settled.status === 'rejected') {
           const failedUrl = imageUrls[index];
           if (failedUrl) {
             failed.push(failedUrl);
-            const rejected = settled as PromiseRejectedResult;
-            this.logger.error(`[IMAGE_DOWNLOAD] Falha ao processar ${failedUrl}: ${rejected.reason}`);
+            this.logger.error(`[IMAGE_DOWNLOAD] Falha ao processar ${failedUrl}: ${settled.reason}`);
           }
         }
       }
@@ -128,7 +126,7 @@ export class ImageDownloadService {
       const urlPath = new URL(url).pathname;
       const urlFilename = urlPath.split('/').pop();
       
-      if (urlFilename && urlFilename.includes('.')) {
+      if (urlFilename?.includes('.')) {
         return urlFilename;
       }
     } catch {

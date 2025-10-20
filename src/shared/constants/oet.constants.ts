@@ -57,7 +57,7 @@ export const ALLOWED_FILE_TYPES = [
  */
 export const VALIDATION_PATTERNS = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  PHONE: /^\+?[\d\s()\-]+$/,
+  PHONE: /^\+?[\d\s()-]+$/,
   NIT: /^[\d-]+$/,
 } as const;
 

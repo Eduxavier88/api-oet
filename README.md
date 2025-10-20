@@ -75,7 +75,7 @@ npm run sonar              # Executa análise SonarQube
 
 ## 📊 Qualidade de Código
 
-- **Cobertura de Testes**: 67.58% statements, 56.43% branches
+- **Cobertura de Testes**: 76.9%
 - **SonarQube**: Integrado com análise contínua
 - **ESLint**: Configurado para TypeScript
 - **TypeScript**: Modo strict habilitado
@@ -84,7 +84,7 @@ npm run sonar              # Executa análise SonarQube
 
 - **Unitários**: Use Cases e Services
 - **Integração**: Controllers e endpoints
-- **Mock**: Sistema de simulação para desenvolvimento
+
 
 ## 📈 Critérios de Aceitação
 

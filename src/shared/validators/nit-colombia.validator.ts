@@ -54,11 +54,9 @@ function validateFormat(nit: string): void {
     if (parts.length !== 2 || parts[0]?.length !== 9 || parts[1]?.length !== 1) {
       throw new Error('NIT deve ter exatamente 9 dígitos + hífen + 1 dígito verificador');
     }
-  } else {
+  } else if (nit.length !== 9) {
     // Formato sem hífen: apenas 9 dígitos
-    if (nit.length !== 9) {
-      throw new Error('NIT deve ter exatamente 9 dígitos');
-    }
+    throw new Error('NIT deve ter exatamente 9 dígitos');
   }
 }
 
