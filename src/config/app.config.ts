@@ -55,7 +55,7 @@ export const appConfig: AppConfig = {
   },
   
   chatwoot: {
-    baseUrl: process.env['CHATWOOT_BASE_URL'] || 'https://omnihitv2.omnihit.app.br',
+    baseUrl: process.env['CHATWOOT_BASE_URL'] || 'http://172.31.187.223:3000',
     token: process.env['CHATWOOT_TOKEN'] || '',
     accountId: process.env['CHATWOOT_ACCOUNT_ID'] || '1',
   },
